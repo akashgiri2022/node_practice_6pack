@@ -4,7 +4,7 @@
     box-sizing: border-box;
 }
 div{
-    padding: 50px;
+    padding: 10px;
     background-color: #7fffd4;
     height: 100vh;
     display: grid;
@@ -39,5 +39,5 @@ h1{
     text-decoration: underline;
 }
 .inpt{
-    padding: 5px;
+    padding: 10px;
 }
