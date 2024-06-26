@@ -10,8 +10,9 @@
     <div>
         <form method="post" action="/login">
             <h1>Login Page</h1>
-            <input class="inpt" type="text" name="name" placeholder="Name:-" />
-            <input class="inpt" type="email" name="email"  placeholder="E-mail:-"/>
+            <input class="inpt" type="email" name="email"  placeholder="E-mail:-" value="<%=locals.email%>"/>
+            <input class="inpt" type="password" name="password"  placeholder="password:-"/>
+            <h6><%=locals.message%></h6>
             <button type="submit">LogIn</button>
         </form>
     </div>

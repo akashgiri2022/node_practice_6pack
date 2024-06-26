@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import { error } from "console";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 //MongoDB start
 //connect database
@@ -23,6 +24,7 @@ mongoose
 const messageschema = new mongoose.Schema({
   name: String,
   email: String,
+  password:String
 });
 
 //Creating Model (used to calling the collection)
@@ -111,56 +113,98 @@ server.delete("/deletedetails", async (req, res) => {
 });
 
 ///////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////// Authantication               ///////////////////////////////////
+//////////////////////////////// Authantication ///////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////
 
 server.use(cookieParser()); //middleware
 
-const Authonatication = (req, res, next) => {
+const Authonatication = async (req, res, next) => {
   //this is own handler or we can say it is our own middleware
   const { token } = req.cookies;
+  console.log(req.cookies); //for cookies install (cookie-parser) i.e. npm i cookie-parser and then import cookieParser  from "cookie-parser"; use middleware server.use(cookieParser());
 
   if (token) {
+    const decodeToken = jwt.verify(token, "qwertyhjdggdjsgjfdfdf");
+    console.log(decodeToken);
+    req.userFullData = await user.findById(decodeToken._id);
+
     next(); //it will refer to the next handler of "Authonatication"
   } else {
     res.render("login.ejs");
   }
 };
-server.get("/", Authonatication, (req, res) => {
-  // res.render("login.ejs")
-  console.log(req.cookies); //for cookies install (cookie-parser) i.e. npm i cookie-parser and then import cookieParser  from "cookie-parser"; use middleware server.use(cookieParser());
 
-  
-  const { token } = req.cookies;
-  if(token){
-    const decodeToken=jwt.verify(token,"qwertyhjdggdjsgjfdfdf")
-    console.log(decodeToken);
-  }
-  
-  if (token) {
-    res.render("logout.ejs");
-  } else {
-    res.render("login.ejs");
-  }
+
+server.get("/", Authonatication, async (req, res) => {
+  // res.render("login.ejs",{message:"Incorrect Password "})
+  console.log(req.userFullData);
+
+  res.render("logout.ejs", { name: req.userFullData.name });
 });
 
-//set cookies
-server.post("/login", async (req, res) => {
-  console.log(req.body);
 
 
-  const userDataafterinsrt = await user.create(req.body); //Datas are store in userData
+server.get("/register", (req, res) => {
+  res.render("register");
+});
 
-  console.log(userDataafterinsrt);
 
-  const token=jwt.sign({_id:userDataafterinsrt._id},"qwertyhjdggdjsgjfdfdf");  //JsonWebToken.sign  qwertyhjdggdjsgjfdfdf(random secreat key)
-  console.log(token);
+
+server.get("/login", (req, res) => {
+  res.render("login.ejs",{message:"Incorrect Password "});
+});
+
+
+
+
+server.post("/register", async (req, res) => {
+  const{name,email,password}=req.body;  //destructure
+  let checkIfregister = await user.findOne({ email: req.body.email });
+  if (checkIfregister) {
+    return res.redirect("/login");
+  }
+
+  const hassedpassword=await bcrypt.hash(password,10); //
+  console.log(hassedpassword);
+
+  const userDataafterinsrt = await user.create({name,email,password:hassedpassword}); //Datas are store in userData
+
+  const token = jwt.sign(
+    { _id: userDataafterinsrt._id },
+    "qwertyhjdggdjsgjfdfdf"
+  ); //JsonWebToken.sign  qwertyhjdggdjsgjfdfdf(random secreat key)
+  // console.log(token);
   res.cookie("token", token, {
     httpOnly: true,
     expires: new Date(Date.now() + 60 * 1000),
   });
   res.redirect("/");
 });
+
+
+
+server.post("/login", async (req, res) => {
+  console.log(req.body);
+  let checkIfLogin = await user.findOne({ email: req.body.email });
+  // console.log(checkIfLogin);
+  if (!checkIfLogin) {
+    return res.redirect("register");
+  }
+  else{
+    const ispassswordcorrect=await bcrypt.compare(req.body.password,checkIfLogin.password)
+    if(!ispassswordcorrect){
+      return res.render("login.ejs",{email:req.body.email,message:"Incorrect Password "});
+    }
+  }
+  const token = jwt.sign({ _id: checkIfLogin._id }, "qwertyhjdggdjsgjfdfdf"); //JsonWebToken.sign  qwertyhjdggdjsgjfdfdf(random secreat key)
+  // console.log(token);
+  res.cookie("token", token, {
+    httpOnly: true,
+    expires: new Date(Date.now() + 60 * 1000),
+  });
+  res.redirect("/");
+});
+
 
 server.get("/logout", (req, res) => {
   res.cookie("token", "null", {
@@ -171,16 +215,22 @@ server.get("/logout", (req, res) => {
   // res.send("Hiii Boss")
 });
 
-///////////////// We will create a new schema in mongo also create a model
 
+
+///////////////// We will create a new schema in mongo also create a model
 //create schema
 const userschema = new mongoose.Schema({
   name: String,
   email: String,
+  password: String,
 });
+
+
 
 //create model
 const user = mongoose.model("user", userschema);
+
+
 
 server.listen(5000, () => {
   console.log("server started MR.SKY");

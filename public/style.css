@@ -14,7 +14,7 @@ form{
     background-color: white;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1rem;
     max-width: 500px;
     width: 100%;
     height: 70%;
@@ -40,4 +40,10 @@ h1{
 }
 .inpt{
     padding: 10px;
+}
+
+h6{
+    text-align: right;
+    color: red;
+    font-weight: 600;
 }
